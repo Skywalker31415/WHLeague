@@ -1,9 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import './App.css';
 import bg from './Images/WHBackground.png';
+import MatchDay from './MatchDay.js'
 // execute database connection 
 
 
@@ -15,6 +16,72 @@ var playerList3  = ["John", "Paul", "George", "Ringo", "Bob", "Aidan B", "s", "G
 var playerLists = [playerList1, playerList3, playerList2, playerList1];*/
 var playerLists = [];
 const columns = ["Name", "W", "L", "D", "P", "PD", "WCD", "Rank"];
+function GetLeagues() {
+  useEffect(() => {
+    // Using fetch to fetch the api from
+    // flask server it will be redirected to proxy
+    fetch("/league-list").then((res) =>
+        res.json().then((data) => {
+            // Setting a data from api
+            console.log(data)
+            leagues=data
+        })
+    );
+}, []);
+return
+}
+
+
+function GetPlayers(league_num) {
+  let league = leagues.length > league_num.league_num ? leagues[league_num.league_num] : ""
+  useEffect(() => {
+    if (league === "")  {
+      return
+    }
+    // Using fetch to fetch the api from
+    // flask server it will be redirected to proxy
+    fetch("/league-players/" + league).then((res) =>
+        res.json().then((data) => {
+            // Setting a data from api
+            try {
+              if (data[0].players.length > 0) {
+                console.log(data)
+                console.log(data[0].players)
+                console.log(playerLists.length)
+                console.log(playerLists[0])
+                playerLists[playerLists.length - 1]=data[0].players
+              }
+            } catch (error) {
+              console.log("no player data")
+            }
+        })
+    );
+}, [league_num, league]);
+return
+}
+
+function GetData(league_num)  {
+  console.log("step 0")
+  let league = leagues.length > league_num.league_num ? leagues[league_num.league_num] : ""
+  useEffect(() => {
+    if (league === "")  {
+      return
+    }
+    // Using fetch to fetch the api from
+    // flask server it will be redirected to proxy
+    fetch("/league-data/" + league).then((res) =>
+        res.json().then((data) => {
+            // Setting a data from api
+            try {
+              console.log(data)
+            } catch (error) {
+              console.log("no player data")
+            }
+        })
+    );
+}, [league_num, league]);
+return
+}
 class Dropdown extends React.Component  {
   constructor(props)  {
     super(props);
@@ -238,10 +305,10 @@ class NewLeague extends React.Component {
 
   handleClick = () => {
     if (!this.state.editLeague){
-    this.setState({
-      isOpen: !this.state.isOpen
-    });
-  }
+      this.setState({
+        isOpen: !this.state.isOpen
+      });
+    }
   }
   handler2() {
     this.props.handler();
@@ -279,7 +346,7 @@ class NewLeague extends React.Component {
   }
   render()  {
     return(
-      <div style={{display: 'flex',  justifyContent:'center', alignItems:'center', height: '100vh'}}>
+      <div className = 'new-league' style={{display: 'flex',  justifyContent:'center', alignItems:'center', height: '100vh'}}>
         <div className='edit-league-btn' onClick={(e) => {e.stopPropagation(); if(!this.state.isOpen){this.setState({value: "", editLeague: !this.state.editLeague})}}}>
           {this.state.editLeague && !this.state.isOpen && 
             (<div onClick={(e) => {e.stopPropagation();}} style={{cursor: 'default', display: 'flex',  justifyContent:'center', alignItems:'center', height: '100vh'}}>
@@ -534,17 +601,18 @@ class Results extends React.Component {
           rightBox[i + 1] = (<div key = {i} style = {{fontSize: '1.7vh'}}>{highestWCs[i][1] + " - " + highestWCs[i][0]}</div>)
         }
         
-        chldrn[1] = (<div className = 'matchup-row' style={{justifyContent: "center", alignItems: 'stretch'}}>
+        chldrn[1] = (<div className = 'matchup-row' key={1} style={{justifyContent: "center", alignItems: 'stretch'}}>
           <div className='matchup-col' children = {leftBox} style={{paddingTop: '1vh', overflowY: 'default', border: 'black', borderStyle: 'solid', justifyContent: "flex-start", minWidth: '99.5%'}}>
           </div>
         </div>);  
-        chldrn[2] = (<div className = 'matchup-row' style={{justifyContent: "center"}}>
+        chldrn[2] = (<div className = 'matchup-row' key={2} style={{justifyContent: "center"}}>
            <div className='matchup-col' children = {rightBox} style={{paddingTop: '1vh', overflowY: 'default', justifyContent: "flex-start", minWidth: '99.5%'}}>
           </div>
-        </div>);  
+        </div>);
+        chldrn[3] = (<GetData key={3} league_num={0}></GetData>)  
       }
       var lbox = <div className='main-col2' children={chldrn} onDoubleClick={() => {this.props.focus(2); this.wasFocused = !this.wasFocused;} }></div>;    
-      return lbox;
+      return lbox
     }
     else if (this.state.showResults === 1) {
       var val = this.state.currentEdit;
@@ -690,7 +758,7 @@ class Rankings extends React.Component {
   constructor(props)  {
     super(props);
     this.state = {
-      ticker:false
+      ticker: false
     };
     this.handler = this.handler.bind(this);
     document.addEventListener('myevent', () => {this.setState({ticker: !this.state.ticker})}, false);
@@ -791,508 +859,6 @@ class Rankings extends React.Component {
     )
   }
 }
-class MatchDay  {
-  constructor(players, roundRobin) {
-    this.players = players;
-    this.results = [];
-    this.playerCount = 0;
-    this.matchups = roundRobin;
-    for (var i = 0; i < players.length; i++) {
-      this.addPlayer(players[i]);
-    }
-    this.games = [];
-    for (i = 0; i < 3*roundRobin[0].length; i++) {
-      this.games[i] = [0,0,0,0];
-    }
-    this.prev = undefined;
-  }
-  changeName(prev, value) {
-    for (var i = 0; i < this.results.length; i++) {
-      if (this.results[i][0] === prev) {
-        this.results[i][0] = value;
-        break;
-      }
-    }
-    for (var i = 0; i < this.prev.results.length; i++) {
-      if (this.prev.results[i][0] === prev) {
-        this.prev.results[i][0] = value;
-        break;
-      }
-    }
-
-    for (i = 0; i < this.matchups[0].length; i++) {
-      if (this.matchups[0][i] === prev) {
-        this.matchups[0][i] = value;
-        break;
-      }
-      else if (this.matchups[1][i] === prev)  {
-        this.matchups[1][i] = value;
-        break;
-      }
-    }
-  }
-  substitutePlayer(prev, value)  {
-    for (var i = 0; i < this.results.length; i++) {
-      if (this.results[i][0] === prev) {
-        this.results[i] = [value,0,0,0,0,0,0,0,""];
-        break;
-      }
-    }
-    for (var i = 0; i < this.prev.results.length; i++) {
-      if (this.prev.results[i][0] === prev) {
-        this.prev.results[i] = [value,0,0,0,0,0,0,0,""];
-        break;
-      }
-    }
-
-    for (i = 0; i < this.matchups[0].length; i++) {
-      if (this.matchups[0][i] === prev) {
-        this.matchups[0][i] = value;
-        this.games[3*i] = [0,0,0,0];
-        this.games[3*i + 1] = [0,0,0,0];
-        this.games[3*i + 2] = [0,0,0,0];
-        break;
-      }
-      else if (this.matchups[1][i] === prev)  {
-        this.matchups[1][i] = value;
-        this.games[3*i] = [0,0,0,0];
-        this.games[3*i + 1] = [0,0,0,0];
-        this.games[3*i + 2] = [0,0,0,0];
-        break;
-      }
-    }
-    
-  }
-  modifyResult(i, j, newresult) {
-    this.results[i][j] = newresult;
-  }
-  addPlayer(player) {
-    if (player === 'bye') {
-      return;
-    }
-    var found = false;
-      for (var i = 0; i < this.playerCount; i++)  {
-        if (this.results[i][0] === player) {
-          found = true;
-        }
-      }
-    if (!found){
-      this.results[this.playerCount] = [player,0,0,0,0,0,0,0,""];
-      this.playerCount++;
-    }
-    this.sortRankings();
-  }
-  getMatchupLeft(pos)  {
-    return this.matchups[0][pos];
-  }
-  getMatchupRight(pos)  {
-    return this.matchups[1][pos];
-  }
-  getData(playerNum)  {
-    return this.results[playerNum];
-  }
-  getPlayerCount()  {
-    return this.playerCount;
-  }
-  getGames(matchNum, idx) {
-    return this.games[3*matchNum + idx];
-  }
-  compare(a, b) {
-    if (a[4] === b[4]) {
-      if (a[5] === b[5])  {
-        if (a[6] === b[6])  {
-          return a[0].localeCompare(b[0]);
-        }
-        return b[6] - a[6];
-      }
-      return b[5]- a[5];
-    }
-    return b[4]-a[4];
-  }
-  findIdx(p1)  {
-    for (var p = 0; p < this.results.length; p++) {
-      if (this.results[p][0] === p1) {
-        return p;
-      }
-    }
-    return -1;
-  }
-  sortRankings()  {
-    for (var p = 0; p < this.results.length; p++) {
-      this.calculatePoints(p);
-    }
-    this.results.sort(this.compare);
-    for (var i = 0; i < this.results.length; i++)  {
-      this.results[i][7] = i + 1;
-    }
-  }
-  calculatePoints(i)  {
-    this.results[i][4] = 2*this.results[i][1] + this.results[i][3]
-  }
-  addData(val, matchNum, idx, offset) {
-    this.games[3*matchNum + idx][offset] = val;
-  }
-  setData(md)  {
-    var array = md.results;
-    this.prev = md;
-    if (array !== null && array !== undefined){
-      for (var i = 0; i < array.length; i++)  {
-        this.results[i][0] = array[i][0];
-        for (var j = 1; j < array[0].length - 1; j++) {
-          this.results[i][j] = array[i][j];
-        }
-      }
-    }
-    else {
-      for (i = 0; i < array.length; i++)  {
-        this.results[i][0] = array[i][0];
-        for (j = 1; j < array[0].length - 1; j++) {
-          this.results[i][j] = 0;
-        }
-      }
-    }
-    /*for (var game = 0; game < this.games.length; game++)  {
-      this.games[game][0] = Math.round(10*Math.random());
-      this.games[game][1] = Math.round(10*Math.random());
-      this.games[game][2] = Math.round(100*Math.random());
-      this.games[game][3] = Math.round(100*Math.random());
-    }*/
-    this.calculateMatchDay();
-    this.sortRankings(); 
-  }
-  calculateMatchDay() {
-    if (this.prev.results !== null && this.prev.results !== undefined && this.prev.results !== [])  {
-      //this.prev.calculateMatchDay();
-    }
-    for (var i = 0; i < this.matchups[0].length; i++) {
-      var p1 = this.matchups[0][i];
-      var p2 = this.matchups[1][i];
-      var p1idx = this.findIdx(p1);
-      var p2idx = this.findIdx(p2);
-      var prevp1idx = -1;
-      var prevp2idx = -1;
-      for (var p = 0; p < this.prev.results.length; p++) {
-        if (this.prev.results[p][0] === p1) {
-          prevp1idx = p;
-        }
-        if (this.prev.results[p][0] === p2) {
-          prevp2idx = p;
-        }
-      }
-      if (p1 === 'bye' || p2 === 'bye') {
-        if (p1 !== 'bye') {
-        this.results[p1idx][1] = parseInt(this.prev.results[prevp1idx][1]);
-        this.results[p1idx][2] = parseInt(this.prev.results[prevp1idx][2]);
-        this.results[p1idx][3] = parseInt(this.prev.results[prevp1idx][3]);
-        this.results[p1idx][5] = parseInt(this.prev.results[prevp1idx][5]);
-        this.results[p1idx][6] = parseInt(this.prev.results[prevp1idx][6]);
-        }
-        else{
-         
-          this.results[p2idx][2] = parseInt(this.prev.results[prevp2idx][2]);
-          this.results[p2idx][1] = parseInt(this.prev.results[prevp2idx][1]);
-          this.results[p2idx][3] = parseInt(this.prev.results[prevp2idx][3]);
-          this.results[p2idx][5] = parseInt(this.prev.results[prevp2idx][5]);
-          this.results[p2idx][6] = parseInt(this.prev.results[prevp2idx][6]);
-        }
-        continue;
-      }
-
-      for (var counter = 0; counter < 3; counter ++){
-        
-        if (counter === 0){
-          this.results[p1idx][5] = parseInt(this.prev.results[prevp1idx][5]) + parseInt(this.games[3*i + counter][0]) - parseInt(this.games[3*i + counter][1]);
-          this.results[p2idx][5] = parseInt(this.prev.results[prevp2idx][5]) + parseInt(this.games[3*i + counter][1]) - parseInt(this.games[3*i + counter][0]);
-
-          this.results[p1idx][6] = parseInt(this.prev.results[prevp1idx][6]) + parseInt(this.games[3*i + counter][2]) - parseInt(this.games[3*i + counter][3]);
-          this.results[p2idx][6] = parseInt(this.prev.results[prevp2idx][6]) + parseInt(this.games[3*i + counter][3]) - parseInt(this.games[3*i + counter][2]);
-          if (parseInt(this.games[3*i + counter][0]) > parseInt(this.games[3*i + counter][1]))  {
-            this.results[p1idx][1] = parseInt(this.prev.results[prevp1idx][1]) + 1;
-            this.results[p2idx][2] = parseInt(this.prev.results[prevp2idx][2]) + 1;
-
-            this.results[p1idx][2] = parseInt(this.prev.results[prevp1idx][2]);
-            this.results[p2idx][1] = parseInt(this.prev.results[prevp2idx][1]);
-
-            this.results[p1idx][3] = parseInt(this.prev.results[prevp1idx][3]);
-            this.results[p2idx][3] = parseInt(this.prev.results[prevp2idx][3]);
-          }
-          else if (parseInt(this.games[3*i + counter][0]) < parseInt(this.games[3*i + counter][1])) {
-            this.results[p1idx][2] = parseInt(this.prev.results[prevp1idx][2]) + 1;
-            this.results[p2idx][1] = parseInt(this.prev.results[prevp2idx][1]) + 1;
-
-            this.results[p1idx][1] = parseInt(this.prev.results[prevp1idx][1]);
-            this.results[p2idx][2] = parseInt(this.prev.results[prevp2idx][2]);
-
-            this.results[p1idx][3] = parseInt(this.prev.results[prevp1idx][3]);
-            this.results[p2idx][3] = parseInt(this.prev.results[prevp2idx][3]);
-          }
-          else  {
-            var temp = (parseInt(this.games[3*i + counter][0])  === 0 && parseInt(this.games[3*i + counter][1]) === 0 )? 0 : 1
-            this.results[p1idx][3] = parseInt(this.prev.results[prevp1idx][3]) + temp;
-            this.results[p2idx][3] = parseInt(this.prev.results[prevp2idx][3]) + temp;
-
-            this.results[p1idx][1] = parseInt(this.prev.results[prevp1idx][1]);
-            this.results[p2idx][2] = parseInt(this.prev.results[prevp2idx][2]);
-
-            this.results[p1idx][2] = parseInt(this.prev.results[prevp1idx][2]);
-            this.results[p2idx][1] = parseInt(this.prev.results[prevp2idx][1]);
-          }
-        }
-        else  {
-          this.results[p1idx][5] = parseInt(this.results[p1idx][5]) + parseInt(this.games[3*i + counter][0]) - parseInt(this.games[3*i + counter][1]);
-          this.results[p2idx][5] = parseInt(this.results[p2idx][5]) + parseInt(this.games[3*i + counter][1]) - parseInt(this.games[3*i + counter][0]);
-
-          this.results[p1idx][6] = parseInt(this.results[p1idx][6]) + parseInt(this.games[3*i + counter][2]) - parseInt(this.games[3*i + counter][3]);
-          this.results[p2idx][6] = parseInt(this.results[p2idx][6]) + parseInt(this.games[3*i + counter][3]) - parseInt(this.games[3*i + counter][2]);
-          if (parseInt(this.games[3*i + counter][0]) > parseInt(this.games[3*i + counter][1]))  {
-            this.results[p1idx][1] = parseInt(this.results[p1idx][1]) + 1;
-            this.results[p2idx][2] = parseInt(this.results[p2idx][2]) + 1;
-          }
-          else if (parseInt(this.games[3*i + counter][0]) < parseInt(this.games[3*i + counter][1])) {
-            this.results[p1idx][2] = parseInt(this.results[p1idx][2]) + 1;
-            this.results[p2idx][1] = parseInt(this.results[p2idx][1]) + 1;
-          }
-          else  {
-            temp = (parseInt(this.games[3*i + counter][0])  === 0 && parseInt(this.games[3*i + counter][1]) === 0 )? 0 : 1
-            this.results[p1idx][3] = parseInt(this.results[p1idx][3]) + temp;
-            this.results[p2idx][3] = parseInt(this.results[p2idx][3]) + temp;
-          }
-        }
-      }
-    }
-  }
-  isWin(matchNum, idx) {
-    if (this.matchups[0][matchNum] === "bye" || this.matchups[1][matchNum] === "bye") {
-      return -1;
-    }
-    if (parseInt(this.games[3*matchNum][0]) === 0 && parseInt(this.games[3*matchNum][1]) === 0 &&
-    parseInt(this.games[3*matchNum + 1][0]) === 0 && parseInt(this.games[3*matchNum + 1][1]) === 0 &&
-    parseInt(this.games[3*matchNum + 2][0]) === 0 && parseInt(this.games[3*matchNum + 2][1]) === 0)  {
-        return -1;
-      }
-    if (parseInt(this.games[3*matchNum + idx][0]) > parseInt(this.games[3*matchNum + idx][1]))  {
-      return 2;
-    }
-    if (parseInt(this.games[3*matchNum + idx][0]) < parseInt(this.games[3*matchNum + idx][1]))  {
-      return 0;
-    }
-    return 1;
-  }
-  wonMatch(matchNum)  {
-    var sum = this.isWin(matchNum, 0) + this.isWin(matchNum, 1) + this.isWin(matchNum, 2);
-    if (sum === -3) {
-      return 3;
-    }
-    if (sum > 3)  {
-      return 2;
-    }
-    if (sum < 3)  {
-      return 0;
-    }
-    return 1;
-  }
-  getCoolWords(matchNum, offset) {
-    var p1 = this.matchups[offset][matchNum];
-    if (p1 === 'bye') {
-      return "";
-    }
-    var p1idx = this.findIdx(p1);
-    if (p1idx < 0)  {
-      return "";
-    }
-    return this.results[p1idx][8];
-  }
-  addCoolWords(val, matchNum, playerNum) {
-    var p1 = this.matchups[playerNum][matchNum];
-    if (p1 === 'bye') {
-      return "";
-    }
-    var p1idx = this.findIdx(p1);
-    if (p1idx < 0)  {
-      return;
-    }
-    this.results[p1idx][8] = val;
-  }
-  getPD(matchNum) {
-    if(this.matchups[0][matchNum] === 'bye' || this.matchups[1][matchNum] === 'bye')  {
-      return 0;
-    }
-    var p1score = parseInt(this.games[3*matchNum][0]) + parseInt(this.games[3*matchNum + 1][0]) + parseInt(this.games[3*matchNum + 2][0]);
-    var p2score = parseInt(this.games[3*matchNum][1]) + parseInt(this.games[3*matchNum + 1][1]) + parseInt(this.games[3*matchNum + 2][1]);
-    if (p1score === 0 && p2score === 0) {
-      return Number.MAX_SAFE_INTEGER;
-    }
-    return  p1score - p2score;
-  }
-  getWCD(matchNum)  {
-    if(this.matchups[0][matchNum] === 'bye' || this.matchups[1][matchNum] === 'bye')  {
-      return 0;
-    }
-    var p1score =  parseInt(this.games[3*matchNum][2]) + parseInt(this.games[3*matchNum + 1][2]) + parseInt(this.games[3*matchNum + 2][2]);
-    var p2score = parseInt(this.games[3*matchNum][3]) + parseInt(this.games[3*matchNum + 1][3]) + parseInt(this.games[3*matchNum + 2][3]);
-    if (p1score === 0 && p2score === 0) {
-      return Number.MAX_SAFE_INTEGER;
-    }
-    return p1score - p2score;
-  }
-  comparePDWCD(matchNum1, matchNum2)  {
-    var pd = parseInt(Math.abs(this.getPD(matchNum1))) - parseInt(Math.abs(this.getPD(matchNum2)));
-    if  (pd !== 0)  {
-      return pd;
-    }
-    return Math.abs(this.getWCD(matchNum1)) - Math.abs(this.getWCD(matchNum2));
-  }
-  sortResults(matchNum) {
-    for (var i = this.matchups[0].length - 1; i >= 0; i--)  {
-      if (this.matchups[0][i] === "bye" || this.matchups[1][i] === "bye") {
-        if (i == this.matchups[0].length - 1)  {
-          break;
-        }
-        else  {
-          var l = this.matchups[0].length - 1;
-
-          temp = this.matchups[0][i];
-          this.matchups[0][i] = this.matchups[0][l];
-          this.matchups[0][l] = temp;
-          temp = this.matchups[1][i];
-          this.matchups[1][i] = this.matchups[1][l];
-          this.matchups[1][l] = temp;
-
-          temp = this.games[3*(i)];
-          this.games[3*(i)] = this.games[3*l];
-          this.games[3*l] = temp;
-          temp = this.games[3*(i) + 1];
-          this.games[3*(i) + 1] = this.games[3*l + 1];
-          this.games[3*l+1] = temp;
-          temp = this.games[3*(i) + 2];
-          this.games[3*(i) + 2] = this.games[3*l + 2];
-          this.games[3*l + 2] = temp;
-          if (matchNum === this.matchups[0].length - 1) {
-            matchNum = i;
-          }
-          break;
-        }
-        
-      }
-    }
-    while (matchNum > 0 && this.comparePDWCD(matchNum, matchNum - 1) > 0)  {
-      var temp = this.matchups[0][matchNum];
-      this.matchups[0][matchNum] = this.matchups[0][matchNum - 1];
-      this.matchups[0][matchNum - 1] = temp;
-      temp = this.matchups[1][matchNum];
-      this.matchups[1][matchNum] = this.matchups[1][matchNum - 1];
-      this.matchups[1][matchNum - 1] = temp;
-
-      temp = this.games[3*matchNum];
-      this.games[3*matchNum] = this.games[3*matchNum - 3];
-      this.games[3*matchNum - 3] = temp;
-      temp = this.games[3*matchNum + 1];
-      this.games[3*matchNum + 1] = this.games[3*matchNum + 1 - 3];
-      this.games[3*matchNum + 1 - 3] = temp;
-      temp = this.games[3*matchNum + 2];
-      this.games[3*matchNum + 2] = this.games[3*matchNum + 2- 3];
-      this.games[3*matchNum + 2 - 3] = temp;
-
-      matchNum--;
-    }
-    while (matchNum < this.matchups[0].length - 1 && this.comparePDWCD(matchNum, matchNum + 1) < 0)  {
-      temp = this.matchups[0][matchNum];
-      this.matchups[0][matchNum] = this.matchups[0][matchNum + 1];
-      this.matchups[0][matchNum + 1] = temp;
-      temp = this.matchups[1][matchNum];
-      this.matchups[1][matchNum] = this.matchups[1][matchNum + 1];
-      this.matchups[1][matchNum + 1] = temp;
-
-      temp = this.games[3*matchNum];
-      this.games[3*matchNum] = this.games[3*matchNum + 3];
-      this.games[3*matchNum + 3] = temp;
-      temp = this.games[3*matchNum + 1];
-      this.games[3*matchNum + 1] = this.games[3*matchNum + 1 + 3];
-      this.games[3*matchNum + 1 + 3] = temp;
-      temp = this.games[3*matchNum + 2];
-      this.games[3*matchNum + 2] = this.games[3*matchNum + 2+ 3];
-      this.games[3*matchNum + 2 + 3] = temp;
-
-      matchNum++;
-    }
-  }
-  getHighestScores()  {
-    var threshold = 40000;
-    var to_return = [];
-    for (var i = 0; i < this.games.length; i++) {
-      if (this.games[i][0] >= threshold) {
-        to_return[to_return.length] = [this.games[i][0], this.matchups[0][parseInt(i/3)]];
-      }
-      if (this.games[i][1] >= threshold) {
-        to_return[to_return.length] = [this.games[i][1], this.matchups[1][parseInt(i/3)]];
-      }
-    }
-    to_return.sort((a,b) => b[0] - a[0]);
-    return to_return;
-  }
-  getHighestWCs() {
-    var threshold = 90;
-    var to_return = [];
-    for (var i = 0; i < this.games.length; i++) {
-      if (this.games[i][2] >= threshold) {
-        to_return[to_return.length] = [this.games[i][2], this.matchups[0][parseInt(i/3)]];
-      }
-      if (this.games[i][3] >= threshold) {
-        to_return[to_return.length] = [this.games[i][3], this.matchups[1][parseInt(i/3)]];
-      }
-    }
-    to_return.sort((a,b) => b[0] - a[0]);   
-    return to_return;
-  }
-  biggestDefeats(flag)  {
-    var biggest = [];
-    for (var matchNum = 0; matchNum < this.matchups[0].length; matchNum++)  {
-      if(this.matchups[0][matchNum] === 'bye' || this.matchups[1][matchNum] === 'bye')  {
-        continue;
-      }
-      var p1score = parseInt(this.games[3*matchNum][0]) + parseInt(this.games[3*matchNum + 1][0]) + parseInt(this.games[3*matchNum + 2][0]);
-      var p2score = parseInt(this.games[3*matchNum][1]) + parseInt(this.games[3*matchNum + 1][1]) + parseInt(this.games[3*matchNum + 2][1]);
-       if (p1score !== 0 || p2score !== 0) {
-        biggest[biggest.length] = [Math.abs(p1score - p2score), this.matchups[0][matchNum], this.matchups[1][matchNum], matchNum]
-      }
-    }
-    if (flag) {
-      biggest.sort((a,b) => b[0] - a[0]);
-    }
-    else  {
-      biggest.sort((a,b) => a[0] - b[0]);
-    }
-    var to_return = "";
-    for (var i = 0; i < 3 && i < biggest.length; i++) {
-      var wins = parseInt(this.games[3*biggest[i][3]][0]) > parseInt(this.games[3*biggest[i][3]][1]) ? 1 : 0;
-      wins += parseInt(this.games[3*biggest[i][3] + 1][0]) > parseInt(this.games[3*biggest[i][3] + 1][1]) ? 1 : 0;
-      wins += parseInt(this.games[3*biggest[i][3] + 2][0]) > parseInt(this.games[3*biggest[i][3] + 2][1]) ? 1 : 0;
-
-      var losses = parseInt(this.games[3*biggest[i][3]][0]) < parseInt(this.games[3*biggest[i][3]][1]) ? 1 : 0;
-      losses += parseInt(this.games[3*biggest[i][3] + 1][0]) < parseInt(this.games[3*biggest[i][3] + 1][1]) ? 1 : 0;
-      losses += parseInt(this.games[3*biggest[i][3] + 2][0]) < parseInt(this.games[3*biggest[i][3] + 2][1]) ? 1 : 0;
-
-      var draws = parseInt(this.games[3*biggest[i][3]][0]) === parseInt(this.games[3*biggest[i][3]][1]) ? 1 : 0;
-      draws += parseInt(this.games[3*biggest[i][3] + 1][0]) === parseInt(this.games[3*biggest[i][3] + 1][1]) ? 1 : 0;
-      draws += parseInt(this.games[3*biggest[i][3] + 2][0]) === parseInt(this.games[3*biggest[i][3] + 2][1]) ? 1 : 0;
-
-      if (wins >= losses)  {
-        to_return += biggest[i][1] + " " + wins + "-" + losses + (draws!== 0 ? ("-" + draws): "") + " " +  biggest[i][2];
-        to_return += " " + (this.getPD(biggest[i][3])/1000) + "k";
-        to_return += " " + (this.getWCD(biggest[i][3])) + "w"
-      }
-      else  {
-        to_return += biggest[i][2] + " " + losses + "-" + wins + (draws!== 0 ? ("-" + draws): "") + " " + biggest[i][1];
-        to_return += " " + (-1*this.getPD(biggest[i][3])/1000) + "k ";
-        to_return += " " + (-1*this.getWCD(biggest[i][3])) + "w"
-      }
-      to_return += "\n";
-    }
-
-    return to_return;
-  }
-  
-}
 class App extends React.Component {
   constructor(props)  {
     super(props);
@@ -1342,7 +908,7 @@ class App extends React.Component {
       this.setState({players: playerLists[this.state.leagueState]});
     }
   }
-  calculateRoundRobin() {
+  calculateRoundRobin(in_render = false) {
     if (this.state.players.length % 2 === 1) {
       this.state.players[this.state.players.length] = "bye";
     }
@@ -1374,7 +940,10 @@ class App extends React.Component {
         }
       }
     }
-    this.setState({roundRobin: this.state.roundRobin, players: this.state.players});
+    if (!in_render)
+    {
+      this.setState({roundRobin: this.state.roundRobin, players: this.state.players});
+    }
   }
   focusMode(i) {
     if (this.state.focusmode !== 0 && this.state.focusmode !== 3) {
@@ -1385,11 +954,11 @@ class App extends React.Component {
     }
   }
   createNewLeague() {
-    var i = leagues.length - 1;
+    let i = leagues.length - 1;
       this.state.players = playerLists[i];
       this.calculateRoundRobin();
       this.state.data[i] = [];
-      for (var j = 0; j < this.state.players.length - 1; j++)  {
+      for (let j = 0; j < this.state.players.length - 1; j++)  {
         this.state.data[i][j] = new MatchDay(playerLists[i], this.state.roundRobin[j]);
         if (j > 0)  {
           this.state.data[i][j].setData(this.state.data[i][j-1]);
@@ -1398,7 +967,8 @@ class App extends React.Component {
           this.state.data[i][j].setData(new MatchDay(playerLists[i], this.state.roundRobin[j]));
         }
       }
-    this.setState({leagueState: i, round: 0});
+      this.setState({leagueState: i, round: 0});
+    
   }
   handler(i) {
     const event = new Event('nextOrPrev', {
@@ -1463,11 +1033,11 @@ class App extends React.Component {
     this.setState({leagueState: max});
   }
   substitute(i, value)  {
-    var prev =  playerLists[this.state.leagueState][i];
+    let prev =  playerLists[this.state.leagueState][i];
     playerLists[this.state.leagueState][i] = value;
 
     if (prev !== value) {
-      for (var i = 0; i < this.state.data[this.state.leagueState].length; i++)  {
+      for (let i = 0; i < this.state.data[this.state.leagueState].length; i++)  {
         this.state.data[this.state.leagueState][i].substitutePlayer(prev, value);
       }
       this.setState({players: playerLists[this.state.leagueState]});
@@ -1477,8 +1047,6 @@ class App extends React.Component {
     var to_copy = "Matchday " + (this.state.round + 1) + " Stats!\n";
     var data = this.state.data[this.state.leagueState][this.state.round];
     var results = data.results;
-    var games = data.games;
-    var matchups = data.matchups;
 
     to_copy += "\nBiggest Defeats:\n"
     to_copy += data.biggestDefeats(true);
@@ -1489,7 +1057,7 @@ class App extends React.Component {
     to_copy += "\nCool Words: \n";
     
     for (var i = 0; i < results.length; i++)  {
-      if (results[i][0] != 'bye' && results[i][8] != "")  {
+      if (results[i][0] !== 'bye' && results[i][8] !== "")  {
         to_copy += results[i][0] + " - " + results[i][8] + "\n";
       }
     }
@@ -1521,11 +1089,33 @@ class App extends React.Component {
       backgroundSize: 'cover',
       backgroundRepeat: 'repeat',
     };
-    var newLeague = this.state.leagueState < 0 || this.state.leagueState >= leagues.length || this.state.leagueState >= playerLists.length || playerLists[this.state.leagueState].length === 0;
-
+    let newLeague = this.state.leagueState < 0 || this.state.leagueState >= leagues.length || this.state.leagueState >= playerLists.length || playerLists[this.state.leagueState].length === 0;
+    
+    //if no data exists, create some
+    if (this.state.data.length > this.state.leagueState && this.state.leagueState >= 0 && playerLists.length > this.state.leagueState && playerLists[this.state.leagueState].length > 0)  {
+      if (this.state.data[this.state.leagueState].length === 0) {
+        let i = leagues.length - 1;
+        this.state.players = playerLists[i];
+        this.calculateRoundRobin(true);
+        this.state.data[i] = [];
+        for (let j = 0; j < this.state.players.length - 1; j++)  {
+          this.state.data[i][j] = new MatchDay(playerLists[i], this.state.roundRobin[j]);
+          if (j > 0)  {
+            this.state.data[i][j].setData(this.state.data[i][j-1]);
+          }
+          else  {
+            this.state.data[i][j].setData(new MatchDay(playerLists[i], this.state.roundRobin[j]));
+          }
+        }
+      }
+    }
+    
+    
     
     return (
       <div className="container" style={bgStyle}>
+        <GetLeagues></GetLeagues>
+        <GetPlayers league_num={this.state.leagueState}></GetPlayers>
         <div className='header-container'>
             <header className="App-header">    
                 Word Hunt League!
