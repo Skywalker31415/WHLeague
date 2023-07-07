@@ -1,10 +1,12 @@
 import requests
 import json
-from flask import Flask, jsonify, Response
+from flask import Flask, jsonify, Response, request
 from pymongo import MongoClient
 from dotenv import dotenv_values
 import certifi
 import pandas as pd
+import traceback
+from bson import ObjectId
 
 app = Flask(__name__)
 
@@ -29,7 +31,10 @@ def getData(collection_name):
     collection = getCollection(collection_name)
     df = list(collection.find({"players": {"$exists": False}}, projection={'_id':0}))
     return df
-
+def postData(data, collection_name):
+    print(type(data),data, collection_name)
+    collection = getCollection(collection_name)
+    collection.insert_one(data)
 
 @app.route("/")
 def status():
@@ -59,6 +64,13 @@ def getLeagueList():
     db = getDatabase(db_name)
     l = json.dumps(db.list_collection_names())
     return l
+
+@app.route("/save-data/<league>", methods=["POST"])
+def saveData(league):
+    data = request.get_json()
+    postData(data, league)
+    return jsonify({"message": "Data saved successfully"})
+    
 #print(getCollection("wordHuntLeagues"))
 if __name__ == "__main__":
     #findItem("wordHuntLeagues")

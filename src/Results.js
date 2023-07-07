@@ -13,38 +13,38 @@ class Results extends React.Component {
     }
     
     getRow(i)  {
-      var greenFont = {
+      const greenFont = {
         color: 'green'
       };
-      var redFont = {
+      const redFont = {
         color: '#D50003'
       };
-      var navyFont = {
+      const navyFont = {
         color: 'navy'
       };
-      var fonts = [redFont, navyFont, greenFont];
+      let fonts = [redFont, navyFont, greenFont];
   
-      var winBG = {
+      const winBG = {
         backgroundColor: '#8DC890',
         //EBD848
         fontWeight: '800'
       }
-      var loseBG = {
+      const loseBG = {
         backgroundColor: '#C37973',
         //D50003
         fontWeight: '600'
       }
-      var drawBG = {
+      const drawBG = {
         backgroundColor: '#90C1CD',
         fontWeight: '600'
       }
-      var defaultBG = {
+      const defaultBG = {
         backgroundColor: 'linen',
         fontWeight: '600'
       }
-      var BGs = [loseBG, drawBG, winBG, defaultBG];
+      let BGs = [loseBG, drawBG, winBG, defaultBG];
   
-      var chldrn = [];
+      let chldrn = [];
       
         chldrn[0] = (
           <div className='matchup-col' key={i + "-0"} style = {BGs[this.props.data.wonMatch(i)]}>
@@ -100,7 +100,7 @@ class Results extends React.Component {
             </div>
           </div>
         );
-      var lbox = <div className='matchup-row' key = {i} children={chldrn} ></div>;    
+      let lbox = <div className='matchup-row' key = {i} children={chldrn} ></div>;    
       return lbox;
     }
     editResults(i)  {
@@ -138,48 +138,48 @@ class Results extends React.Component {
     render()  {
       
       if (this.state.showResults === 0){
-        var onTabStyle = {
+        const onTabStyle = {
           backgroundColor: 'rgb(22, 153, 224)',
           flexGrow: 3,
           height: '100%',
         }
-        var offTabStyle = {
+        const offTabStyle = {
           backgroundColor: 'rgb(17, 121, 178)',
           flexGrow: 1,
           height: '100%',
         }
-        var tabStyles = [onTabStyle, offTabStyle];
+        const tabStyles = [onTabStyle, offTabStyle];
   
-        var chldrn = [];
+        let chldrn = [];
         chldrn[0] = (<div className='results-header' key={"-1"}>
           <div className='results-header-col' style={tabStyles[(this.state.currentTab === 0 ? 0 : 1)]} onClick = {() => {this.setState({currentTab: 0})}}>
           {"Results"}
           </div>
-          <div className='results-header-col2' style={tabStyles[(this.state.currentTab === 1 ? 0 : 1)]} onClick = {() => {this.setState({currentTab: 1})}}>
+          <div className='results-header-col' style={tabStyles[(this.state.currentTab === 1 ? 0 : 1)]} onClick = {() => {this.setState({currentTab: 1})}}>
           {"Cool Words"}
           </div>
-          <div className='results-header-col2' style={tabStyles[(this.state.currentTab === 2 ? 0 : 1)]} onClick = {() => {this.setState({currentTab: 2})}}>
+          <div className='results-header-col' style={tabStyles[(this.state.currentTab === 2 ? 0 : 1)]} onClick = {() => {this.setState({currentTab: 2})}}>
           {"Highest Scores"}
           </div>
         </div>);
         if (this.state.currentTab === 0 || this.state.currentTab === 1) {
-          for (var i = 0; i < this.props.data.getPlayerCount()/2; i++)  {
+          for (let i = 0; i < this.props.data.getMatchupCount(); i++)  {
             chldrn[i + 1] = (
                 this.getRow(i)
             );
           }
         }
         else if (this.state.currentTab === 2) {
-          var leftBox = []
+          let leftBox = []
           leftBox[0] = (<div key = {0} style = {{fontSize: '2.2vh', fontWeight: 'bold'}}>{"Highest Scores:"}</div>)
-          var rightBox = [];
+          let rightBox = [];
           rightBox[0] = (<div key = {0} style = {{fontSize: '2.2vh', fontWeight: 'bold'}}>{"Highest Word Counts:"}</div>)
-          var highestScores = this.props.data.getHighestScores();
-          var highestWCs = this.props.data.getHighestWCs();
-          for (i = 0; i < highestScores.length; i++)  {
+          let highestScores = this.props.data.getHighestScores();
+          let highestWCs = this.props.data.getHighestWCs();
+          for (let i = 0; i < highestScores.length; i++)  {
             leftBox[i + 1] = (<div key = {i} style = {{fontSize: '1.7vh'}}>{highestScores[i][1] + " - " + highestScores[i][0]/1000 + "k"}</div>)
           }
-          for (i = 0; i < highestWCs.length; i++)  {
+          for (let i = 0; i < highestWCs.length; i++)  {
             rightBox[i + 1] = (<div key = {i} style = {{fontSize: '1.7vh'}}>{highestWCs[i][1] + " - " + highestWCs[i][0]}</div>)
           }
           
@@ -191,13 +191,12 @@ class Results extends React.Component {
              <div className='matchup-col' children = {rightBox} style={{paddingTop: '1vh', overflowY: 'default', justifyContent: "flex-start", minWidth: '99.5%'}}>
             </div>
           </div>);
-          //chldrn[3] = (<GetData key={3} league_num={0}></GetData>)  
         }
-        var lbox = <div className='main-col2' children={chldrn} onDoubleClick={() => {this.props.focus(2); this.wasFocused = !this.wasFocused;} }></div>;    
+        let lbox = <div className='main-col2' children={chldrn} onDoubleClick={() => {this.props.focus(2); this.wasFocused = !this.wasFocused;} }></div>;    
         return lbox
       }
       else if (this.state.showResults === 1) {
-        var val = this.state.currentEdit;
+        let val = this.state.currentEdit;
         const inputStyle = {
           display: 'flex',
           alignItems:'center',

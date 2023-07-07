@@ -43,11 +43,11 @@ class Dropdown extends React.Component  {
     }
     
     getButtons()  {
-      var chldrn = [];
-      for (var i = 0; i < this.props.leagues.length; i++)  {
+      let chldrn = [];
+      for (let i = 0; i < this.props.leagues.length; i++)  {
         chldrn[i] = (this.getButton(i));
       }
-      var lbox = <div style = {{marginTop: '7.5vh', alignContent: 'center'}} className='League-box' id="dd" children={chldrn}></div>;    
+      let lbox = <div style = {{marginTop: '7.5vh', alignContent: 'center'}} className='League-box' id="dd" children={chldrn}></div>;    
       return lbox;
     }
     getButton(i) {
